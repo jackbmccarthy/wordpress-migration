@@ -1,0 +1,27 @@
+{
+  "name": "wordpress-migration",
+  "version": "1.0.0",
+  "description": "Export and import your entire WordPress site to another WordPress installation",
+  "author": "Jack McCarthy",
+  "author_uri": "https://jackmccarthy.dev",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://github.com/jackbmccarthy/wordpress-migration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jackbmccarthy/wordpress-migration.git"
+  },
+  "keywords": [
+    "wordpress",
+    "migration",
+    "export",
+    "import",
+    "backup"
+  ],
+  "requires_php": ">=7.4",
+  "requires": ">=5.0",
+  "tested": "6.4",
+  "devDependencies": {},
+  "config": {
+    "wordpress-plugin": true
+  }
+}
