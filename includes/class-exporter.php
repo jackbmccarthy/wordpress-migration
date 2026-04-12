@@ -85,6 +85,7 @@ class WP_Migration_Exporter
             'include_settings'   => true,
             'include_widgets'    => true,
             'include_menus'      => true,
+            'include_plugins'    => true,
         ]);
 
         $this->data = [
@@ -100,6 +101,7 @@ class WP_Migration_Exporter
             'settings'       => [],
             'widgets'        => [],
             'menus'          => [],
+            'plugins'       => [],
         ];
 
         // Create temp directory.
@@ -132,6 +134,10 @@ class WP_Migration_Exporter
 
         if ($this->options['include_settings'] || $this->options['include_widgets'] || $this->options['include_menus']) {
             $this->export_settings();
+        }
+
+        if ($this->options['include_plugins']) {
+            $this->export_plugins();
         }
 
         // Save manifest JSON.
@@ -525,6 +531,70 @@ class WP_Migration_Exporter
 
         // Get menu locations.
         $this->data['settings']['nav_menu_locations'] = get_nav_menu_locations();
+    }
+
+    /**
+     * Export all installed plugins and their settings.
+     *
+     * @return void
+     */
+    public function export_plugins(): void
+    {
+        // Get all installed plugins.
+        $all_plugins = get_plugins();
+        $active_plugins = get_option('active_plugins', array());
+        $network_active = (is_multisite()) ? get_site_option('active_sitewide_plugins', array()) : array();
+
+        // For each active plugin, try to export its settings.
+        $plugin_settings = array();
+        foreach ($active_plugins as $plugin_path) {
+            $settings = $this->get_plugin_settings($plugin_path);
+            if (!empty($settings)) {
+                $plugin_settings[$plugin_path] = $settings;
+            }
+        }
+
+        $this->data['plugins'] = array(
+            'all_plugins' => $all_plugins,
+            'active_plugins' => $active_plugins,
+            'network_active' => array_keys($network_active),
+            'plugin_settings' => $plugin_settings,
+            'exported_at' => current_time('mysql'),
+        );
+    }
+
+    /**
+     * Get settings for a specific plugin by examining common option names.
+     *
+     * @param string $plugin_path Plugin path.
+     * @return array Plugin settings.
+     */
+    private function get_plugin_settings(string $plugin_path): array
+    {
+        $plugin_slug = dirname($plugin_path);
+        $settings = array();
+
+        // Common option name patterns for plugins.
+        $option_patterns = array(
+            $plugin_slug,                                     // plugin name
+            str_replace('-', '_', $plugin_slug),            // hyphen to underscore
+            str_replace('/', '_', $plugin_slug),             // slash to underscore
+        );
+
+        // Get all options.
+        global $wpdb;
+        $options = $wpdb->get_results("SELECT option_name, option_value FROM {$wpdb->options} WHERE autoload = 'yes'");
+
+        foreach ($options as $option) {
+            foreach ($option_patterns as $pattern) {
+                if (stripos($option->option_name, $pattern) !== false) {
+                    // Found a related option.
+                    $settings[$option->option_name] = maybe_unserialize($option->option_value);
+                }
+            }
+        }
+
+        return $settings;
     }
 
     /**

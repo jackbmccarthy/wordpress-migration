@@ -189,6 +189,7 @@ class WP_Migration_Importer
             'import_settings' => true,
             'import_widgets'  => true,
             'import_menus'    => true,
+            'import_plugins'  => true,
             'user_role_map'   => [], // Map old role => new role
         ]);
 
@@ -200,6 +201,7 @@ class WP_Migration_Importer
             'settings'   => [],
             'widgets'    => [],
             'menus'      => [],
+            'plugins'    => [],
         ];
 
         // Import in order of dependencies.
@@ -264,6 +266,15 @@ class WP_Migration_Importer
                 return $menu_result;
             }
             $results['menus'] = $menu_result;
+        }
+
+        // 8. Plugins.
+        if ($this->options['import_plugins'] && !empty($this->data['plugins'])) {
+            $plugin_result = $this->import_plugins($this->data['plugins']);
+            if (is_wp_error($plugin_result)) {
+                return $plugin_result;
+            }
+            $results['plugins'] = $plugin_result;
         }
 
         // Cleanup.
@@ -961,6 +972,56 @@ class WP_Migration_Importer
         }
 
         return $this->post_id_map[$old_parent] ?? 0;
+    }
+
+    /**
+     * Import plugin settings and optionally prompt for installation.
+     *
+     * @param array $data Plugin data from export.
+     * @param array $options Import options.
+     * @return array Import results.
+     */
+    public function import_plugins(array $data, array $options = array()): array
+    {
+        $activate = isset($options['activate']) ? $options['activate'] : true;
+
+        $results = array(
+            'active_plugins' => array(),
+            'plugin_settings' => array(),
+            'missing_plugins' => array(),
+        );
+
+        if (isset($data['active_plugins'])) {
+            // Check which plugins are already installed.
+            $installed = get_plugins();
+
+            foreach ($data['active_plugins'] as $plugin_path) {
+                if (isset($installed[$plugin_path])) {
+                    // Plugin is installed, just activate.
+                    if ($activate && !is_plugin_active($plugin_path)) {
+                        activate_plugin($plugin_path);
+                    }
+                    $results['active_plugins'][] = $plugin_path;
+                } else {
+                    // Plugin not installed.
+                    $results['missing_plugins'][] = $plugin_path;
+                }
+            }
+        }
+
+        // Import plugin settings.
+        if (isset($data['plugin_settings'])) {
+            foreach ($data['plugin_settings'] as $plugin_path => $settings) {
+                if (in_array($plugin_path, $results['active_plugins'], true)) {
+                    foreach ($settings as $option_name => $option_value) {
+                        update_option($option_name, $option_value);
+                    }
+                    $results['plugin_settings'][$plugin_path] = count($settings);
+                }
+            }
+        }
+
+        return $results;
     }
 
     /**

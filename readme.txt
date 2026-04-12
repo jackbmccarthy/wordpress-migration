@@ -21,6 +21,7 @@ WordPress Migration Tool allows you to export and import all of your WordPress c
 * Export all users (without passwords for security)
 * Export all media library files as ZIP
 * Export site settings, widgets, and navigation menus
+* Export active plugin list and plugin settings
 * Import with merge or replace options
 * Duplicate detection prevents creating multiple copies
 * Remote migration via REST API
@@ -48,7 +49,7 @@ By default, import merges content with existing content. Duplicate detection pre
 
 = What about my theme and plugins? =
 
-Theme settings (theme mods) are exported but only applied if using the same theme. Plugin settings are not exported.
+Theme settings (theme mods) are exported but only applied if using the same theme. Active plugins and their settings are exported - plugin files must be reinstalled on the target site but settings will be imported automatically.
 
 = How do I do a remote migration? =
 

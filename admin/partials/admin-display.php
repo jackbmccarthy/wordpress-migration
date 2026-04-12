@@ -120,6 +120,12 @@ function render_export_tab(): void
                     <input type="checkbox" name="include_menus" value="true" checked />
                     <span><?php esc_html_e('Navigation Menus', 'wordpress-migration'); ?></span>
                 </label>
+
+                <label class="wp-migration-checkbox">
+                    <input type="checkbox" name="include_plugins" value="true" checked />
+                    <span><?php esc_html_e('Plugins', 'wordpress-migration'); ?></span>
+                    <span class="description"><?php esc_html_e('Export active plugin list and settings. Note: Plugin files must be installed manually on target site.', 'wordpress-migration'); ?></span>
+                </label>
             </div>
 
             <div class="wp-migration-actions">
